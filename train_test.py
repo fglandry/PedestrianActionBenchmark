@@ -15,6 +15,9 @@ from action_predict import ActionPredict
 from jaad_data import JAAD
 from pie_data import PIE
 
+jaad_dir = os.path.expanduser("~/MASTER/JAAD")
+os.environ["JAAD_PATH"] = jaad_dir
+
 
 def write_to_yaml(yaml_path=None, data=None):
     """
