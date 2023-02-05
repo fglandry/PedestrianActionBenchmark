@@ -15,15 +15,6 @@ from action_predict import ActionPredict
 from jaad_data import JAAD
 from pie_data import PIE
 
-from tensorflow.compat.v1 import ConfigProto
-from tensorflow.compat.v1 import InteractiveSession
-
-
-def fix_gpu():
-    config = ConfigProto()
-    config.gpu_options.allow_growth = True
-    session = InteractiveSession(config=config)
-
 
 def write_to_yaml(yaml_path=None, data=None):
     """
@@ -146,7 +137,6 @@ def usage():
     print()
 
 if __name__ == '__main__':
-    #fix_gpu()
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hc:', ['help', 'config_file'])
     except getopt.GetoptError as err:
