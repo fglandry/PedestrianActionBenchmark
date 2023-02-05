@@ -1716,9 +1716,9 @@ class ATGC(ActionPredict):
 
         d = {'box': data_raw['bbox'].copy(),
              'crossing': data_raw['activities'].copy(),
-             #'walking': data_raw['actions'].copy(),
+             'walking': data_raw['actions'].copy(),
              'ped_id': data_raw['pid'].copy(),
-             #'looking': data_raw['looks'].copy(),
+             'looking': data_raw['looks'].copy(),
              'image': data_raw['image'].copy()}
 
         balance = opts['balance_data'] if data_type == 'train' else False
