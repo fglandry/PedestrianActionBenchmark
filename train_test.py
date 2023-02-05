@@ -15,8 +15,14 @@ from action_predict import ActionPredict
 from jaad_data import JAAD
 from pie_data import PIE
 
-jaad_dir = os.path.expanduser("~/MASTER/JAAD")
-os.environ["JAAD_PATH"] = jaad_dir
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+
+
+def fix_gpu():
+    config = ConfigProto()
+    config.gpu_options.allow_growth = True
+    session = InteractiveSession(config=config)
 
 
 def write_to_yaml(yaml_path=None, data=None):
@@ -98,9 +104,9 @@ def run(config_file=None):
 
         # get sequences
         beh_seq_train = imdb.generate_data_trajectory_sequence('train', **configs['data_opts'])
-        beh_seq_val = None 
+        #beh_seq_val = None 
         # Uncomment the line below to use validation set
-        #beh_seq_val = imdb.generate_data_trajectory_sequence('val', **configs['data_opts'])
+        beh_seq_val = imdb.generate_data_trajectory_sequence('val', **configs['data_opts'])
         beh_seq_test = imdb.generate_data_trajectory_sequence('test', **configs['data_opts'])
 
         # get the model
@@ -140,6 +146,7 @@ def usage():
     print()
 
 if __name__ == '__main__':
+    #fix_gpu()
     try:
         opts, args = getopt.getopt(sys.argv[1:], 'hc:', ['help', 'config_file'])
     except getopt.GetoptError as err:

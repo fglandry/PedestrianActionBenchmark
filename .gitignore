@@ -1,6 +1,7 @@
 *pyc
 __pycache__/
 
-models/
-weights/
 data/
+data_cache/
+docker/
+weights/
