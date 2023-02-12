@@ -36,5 +36,5 @@ train_opts:
     early_stop:
       restore_best_weights: true
       mode: "min"
-      patience: 10 
+      patience: 8 
 

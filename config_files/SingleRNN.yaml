@@ -1,6 +1,6 @@
 model_opts:
-  model: SFRNN
-  obs_input_type: [local_box, local_surround, box, speed]
+  model: SingleRNN
+  obs_input_type: [box, speed]
   apply_class_weights: True
   normalize_boxes: True
   generator: True
@@ -13,5 +13,5 @@ net_opts:
 exp_opts:
   datasets: [jaad_beh]
   batch_size: [32, 32, 32]
-  epochs: [60, 40, 40]
-  lr: [0.00005, 0.0000001, 0.0000001]
+  epochs: [40, 40, 40]
+  lr: [0.0000001, 0.0000001, 0.0000001]
