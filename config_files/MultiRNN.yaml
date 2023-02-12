@@ -3,7 +3,7 @@ model_opts:
   obs_input_type: [box, speed]
   apply_class_weights: True
   normalize_boxes: True
-  generator: True
+  generator: False
 net_opts:
   num_hidden_units: 256
   global_pooling: avg
