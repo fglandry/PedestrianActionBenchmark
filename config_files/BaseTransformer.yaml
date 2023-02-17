@@ -1,11 +1,12 @@
 model_opts:
-  model: SFRNN
-  obs_input_type: [local_box, local_surround, box, speed]
+  model: BaseTransformer
+  obs_input_type: [box, speed]
   apply_class_weights: True
   normalize_boxes: True
   generator: False
+  reshape_input_to_1d_list: True
 net_opts:
-  num_hidden_units: 256
+  num_hidden_units: 128
   global_pooling: avg
   regularizer_val: 0.0001
   cell_type: gru
@@ -13,5 +14,5 @@ net_opts:
 exp_opts:
   datasets: [jaad_beh]
   batch_size: [32, 32, 32]
-  epochs: [60, 40, 40]
-  lr: [0.00005, 0.0000001, 0.0000001]
+  epochs: [100, 100, 100]
+  lr: [0.0001, 0.0001, 0.0001]
