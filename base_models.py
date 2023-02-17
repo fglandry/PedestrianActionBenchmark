@@ -5,6 +5,7 @@ from tensorflow.keras.layers import Conv3D, MaxPooling3D, ZeroPadding3D
 from tensorflow.keras.layers import AveragePooling3D
 from tensorflow.keras.layers import Reshape
 from tensorflow.keras.layers import Lambda, BatchNormalization
+from tensorflow.keras.layers import Conv1D, MultiHeadAttention, LayerNormalization, Dropout, GlobalAveragePooling1D # transformer imports
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, Concatenate, Dense
 import tensorflow.keras.backend as K
@@ -411,3 +412,47 @@ def I3DNet(freeze_conv_layers=False, weights=None, classes=1,
         net_model.load_weights(weights, by_name=True)
 
     return net_model
+
+class TransformerNet():
+
+    @staticmethod
+    def transformer_encoder(inputs, head_size, num_heads, ff_dim, dropout=0):
+        # Normalization and Attention
+        x = LayerNormalization(epsilon=1e-6)(inputs)
+        x = MultiHeadAttention(
+            key_dim=head_size, num_heads=num_heads, dropout=dropout
+        )(x, x)
+        x = Dropout(dropout)(x)
+        res = x + inputs
+
+        # Feed Forward Part
+        x = LayerNormalization(epsilon=1e-6)(res)
+        x = Conv1D(filters=ff_dim, kernel_size=1, activation="relu")(x)
+        x = Dropout(dropout)(x)
+        x = Conv1D(filters=inputs.shape[-1], kernel_size=1)(x)
+        return x + res
+
+    @staticmethod
+    def build_model(
+        inputs,
+        head_size,
+        num_heads,
+        ff_dim,
+        num_transformer_blocks,
+        mlp_units,
+        dropout=0,
+        mlp_dropout=0,
+        n_classes=1
+    ):
+        #inputs = Input(shape=input_shape)
+        x = inputs
+        for _ in range(num_transformer_blocks):
+            x = TransformerNet.transformer_encoder(x, head_size, num_heads, ff_dim, dropout)
+
+        x = GlobalAveragePooling1D(data_format="channels_first")(x)
+        for dim in mlp_units:
+            x = Dense(dim, activation="relu")(x)
+            x = Dropout(mlp_dropout)(x)
+        #outputs = Dense(n_classes, activation="softmax")(x)
+        outputs = Dense(n_classes, activation="sigmoid")(x)
+        return Model(inputs, outputs)

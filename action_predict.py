@@ -5,7 +5,7 @@ import wget
 import cv2
 from utils import *
 from base_models import AlexNet, C3DNet, convert_to_fcn
-from base_models import I3DNet
+from base_models import I3DNet, TransformerNet
 from tensorflow.keras.layers import Input, Concatenate, Dense
 from tensorflow.keras.layers import GRU, LSTM, GRUCell
 from tensorflow.keras.layers import Dropout, LSTMCell, RNN
@@ -575,6 +575,10 @@ class ActionPredict(object):
             data_sizes.append(feat_shape)
             data_types.append(d_type)
 
+        # Reshape input if specified in configs
+        if "reshape_input_to_1d_list" in model_opts:
+            _data = np.c_[_data[0], _data[1]]
+
         # create the final data file to be returned
         if self._generator:
             _data = (DataGenerator(data=_data,
@@ -669,7 +673,7 @@ class ActionPredict(object):
             callbacks = []
             if 'early_stop' in learning_scheduler:
                 default_params = {'monitor': 'val_loss',
-                                  'min_delta': 1.0, 'patience': 5,
+                                  'min_delta': 0.0, 'patience': 5,
                                   'verbose': 1}
                 default_params.update(learning_scheduler['early_stop'])
                 callbacks.append(EarlyStopping(**default_params))
@@ -907,6 +911,49 @@ class ActionPredict(object):
                                         recurrent_regularizer=self._regularizer,
                                         bias_regularizer=self._regularizer, ))
         return RNN(cells, return_sequences=r_sequence, return_state=r_state)
+
+
+class BaseTransformer(ActionPredict):
+    """
+    """
+    def __init__(self,
+                 num_hidden_units=128,
+                 **kwargs):
+        """
+        Class init function
+        Args:
+            num_hidden_units: 
+        """
+        super().__init__(**kwargs)
+        # Network parameters
+        self._mlp_units = num_hidden_units
+
+    def get_model(self, data_params):
+        network_inputs = []
+        data_sizes = data_params['data_sizes']
+        data_types = data_params['data_types']
+        core_size = len(data_sizes)
+
+        for i in range(core_size):
+            network_inputs.append(Input(shape=data_sizes[i],
+                                        name='input_' + data_types[i]))
+
+        if len(network_inputs) > 1:
+            inputs = Concatenate(axis=2)(network_inputs)
+        else:
+            inputs = network_inputs[0]
+
+        net_model = TransformerNet.build_model(
+            inputs,
+            head_size=256,
+            num_heads=4,
+            ff_dim=4,
+            num_transformer_blocks=4,
+            mlp_units=[self._mlp_units],
+            mlp_dropout=0.4,
+            dropout=0.25,
+        )
+        return net_model
 
 
 class SingleRNN(ActionPredict):

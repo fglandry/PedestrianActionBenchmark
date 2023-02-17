@@ -27,8 +27,14 @@ net_opts:
   regularizer_val: 0.0001
   cell_type: gru
   backbone: vgg16
+  freeze_conv_layers: false
 train_opts:
   batch_size: 32
   epochs: 20
   lr: 0.000005
   learning_scheduler:
+    early_stop:
+      restore_best_weights: true
+      mode: "min"
+      patience: 8 
+

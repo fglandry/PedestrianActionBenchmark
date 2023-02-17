@@ -4,7 +4,7 @@ model_opts:
   apply_class_weights: True
   generator: True
 exp_opts:
-  datasets: [pie, jaad_all, jaad_beh]
+  datasets: [jaad_beh]
   batch_size: [16, 16,16]
   epochs: [40, 40, 40]
   lr: [5.0e-05, 5.0e-06, 5.0e-06]
