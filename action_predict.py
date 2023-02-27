@@ -60,7 +60,8 @@ class ActionPredict(object):
                                      crop_resize_ratio=2,
                                      target_dim=(224, 224),
                                      process=True,
-                                     regen_data=False):
+                                     regen_data=False,
+                                     debug=False):
         """
         Generate visual feature sequences by reading and processing images
         Args:
@@ -138,12 +139,24 @@ class ActionPredict(object):
                             img_features = cv2.flip(img_features, 1)
                     else:
                         img_data = cv2.imread(imp)
+                        if debug:
+                            #cv2.imshow("image", img_data)
+                            #cv2.waitKey(0)
+                            pass
                         if flip_image:
                             img_data = cv2.flip(img_data, 1)
                         if crop_type == 'bbox':
                             b = list(map(int, b[0:4]))
                             cropped_image = img_data[b[1]:b[3], b[0]:b[2], :]
+                            if debug:
+                                pass
+                                #cv2.imshow("image", cropped_image)
+                                #cv2.waitKey(0)
                             img_features = img_pad(cropped_image, mode=crop_mode, size=target_dim[0])
+                            if debug:
+                                #cv2.imshow("image", img_features)
+                                #cv2.waitKey(0)
+                                pass
                         elif 'context' in crop_type:
                             bbox = jitter_bbox(imp, [b], 'enlarge', crop_resize_ratio)[0]
                             bbox = squarify(bbox, 1, img_data.shape[1])
@@ -563,6 +576,7 @@ class ActionPredict(object):
                                            dataset=dataset,
                                            save_root_folder='data/features')
                 features = get_pose(data['image'],
+                                    data['box_org'],
                                     data['ped_id'],
                                     data_type=data_type,
                                     file_path=path_to_pose,

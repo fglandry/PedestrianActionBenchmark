@@ -7,6 +7,8 @@ import cv2
 from tensorflow.keras.preprocessing.image import load_img
 from sklearn.metrics import accuracy_score
 
+from pose import get_pose_keypoints
+
 # Data utilities
 def flip_pose(pose):
     """
@@ -34,6 +36,7 @@ def flip_pose(pose):
 
 
 def get_pose(img_sequences,
+             bbox_sequences,
              ped_ids, file_path,
              data_type='train',
              dataset='pie'):
@@ -48,19 +51,37 @@ def get_pose(img_sequences,
          Sequences of poses
     """
 
+    create_pose(img_sequences, bbox_sequences, ped_ids, file_path, data_type, dataset)
+
     print('\n#####################################')
     print('Getting poses %s' % data_type)
     print('#####################################')
     poses_all = []
-    set_poses_list = [x for x in os.listdir(file_path) if x.endswith('.pkl')]
+    set_poses_list = []
+    for path, _, files in os.walk(file_path):
+        for name in files:
+            if name.endswith('.pkl'):
+                set_poses_list.append(os.path.join(path, name))
+
+    #set_poses_list = [x for x in os.listdir(file_path) if x.endswith('.pkl')]
     set_poses = {}
     for s in set_poses_list:
-        with open(os.path.join(file_path, s), 'rb') as fid:
+        with open(s, 'rb') as fid:
             try:
                 p = pickle.load(fid)
             except:
                 p = pickle.load(fid, encoding='bytes')
-        set_poses[s.split('.pkl')[0].split('_')[-1]] = p
+        if dataset == 'pie':
+            set_id = s.split('/')[-3]
+        elif dataset == 'jaad':
+            set_id = 'set01'
+        vid_id = s.split('/')[-2]
+        pose_id = s.split('/')[-1].split('.')[0]
+        if set_id not in set_poses:
+            set_poses[set_id] = {}
+        if vid_id not in set_poses[set_id]:
+            set_poses[set_id][vid_id] = {}
+        set_poses[set_id][vid_id][pose_id] = p
     i = -1
     for seq, pid in zip(img_sequences, ped_ids):
         i += 1
@@ -92,6 +113,114 @@ def get_pose(img_sequences,
         poses_all.append(pose)
     poses_all = np.array(poses_all)
     return poses_all
+
+"""
+def create_pose(self, img_sequences, bbox_sequences,
+                                     ped_ids, save_path,
+                                     data_type='train',
+                                     crop_type='none',
+                                     crop_mode='warp',
+                                     crop_resize_ratio=2,
+                                     target_dim=(224, 224),
+                                     process=True,
+                                     regen_data=False,
+                                     debug=False):
+"""
+
+def create_pose(img_sequences, bbox_sequences, ped_ids, save_path, data_type, dataset,
+                crop_type="bbox", crop_mode='no_padding', target_dim=(224, 224),
+                regen_data=False, generator=False):
+
+    # load the feature files if exists
+    """
+    print("Generating {} features crop_type={} crop_mode={}\
+            \nsave_path={}, ".format(data_type, crop_type, crop_mode,
+                                    save_path))
+    """
+
+    sequences = []
+    bbox_seq = bbox_sequences.copy()
+    i = -1
+    for seq, pid in zip(img_sequences, ped_ids):
+        i += 1
+        update_progress(i / len(img_sequences))
+        pose_seq = []
+        for imp, b, p in zip(seq, bbox_seq[i], pid):
+            #set_id = imp.split('/')[-3]
+            vid_id = imp.split('/')[-2]
+            img_name = imp.split('/')[-1].split('.')[0]
+            pose_save_folder = os.path.join(save_path, vid_id)
+            pose_save_path = os.path.join(pose_save_folder, img_name + '_' + p[0] + '.pkl')
+
+            # Check whether the file exists
+            if os.path.exists(pose_save_path) and not regen_data:
+                if not generator:
+                    with open(pose_save_path, 'rb') as fid:
+                        try:
+                            pose_features = pickle.load(fid)
+                        except:
+                            pose_features = pickle.load(fid, encoding='bytes')
+            else: # calculate pose features
+                
+                img_data = cv2.imread(imp, cv2.IMREAD_UNCHANGED)
+                # crop bbox from image
+                if crop_type == 'bbox':
+                    b = list(map(int, b[0:4]))
+                    cropped_image = img_data[b[1]:b[3], b[0]:b[2], :]
+                    if crop_mode == "no_padding":
+                        img_features = cropped_image
+                    else:
+                        img_features = img_pad(cropped_image, mode=crop_mode, size=target_dim[0])
+                else:
+                    raise Exception()
+                pose_features = get_pose_keypoints(img_features)
+                
+                # Save the file
+                if not os.path.exists(pose_save_folder):
+                    os.makedirs(pose_save_folder)
+                with open(pose_save_path, 'wb') as fid:
+                    pickle.dump(pose_features, fid, pickle.HIGHEST_PROTOCOL)
+
+                test = 4
+
+            # if using the generator save the cached features path and size of the features                                   
+            """
+            if process and not self._generator:
+                if self._global_pooling == 'max':
+                    img_features = np.squeeze(img_features)
+                    img_features = np.amax(img_features, axis=0)
+                    img_features = np.amax(img_features, axis=0)
+                elif self._global_pooling == 'avg':
+                    img_features = np.squeeze(img_features)
+                    img_features = np.average(img_features, axis=0)
+                    img_features = np.average(img_features, axis=0)
+                else:
+                    img_features = img_features.ravel()
+            """
+            if generator:
+                pose_seq.append(pose_save_path)
+            else:
+                pose_seq.append(pose_features)
+        sequences.append(pose_seq)
+    sequences = np.array(sequences)
+    # compute size of the features after the processing
+    """
+    if self._generator:
+        with open(sequences[0][0], 'rb') as fid:
+            feat_shape = pickle.load(fid).shape
+        if process:
+            if self._global_pooling in ['max', 'avg']:
+                feat_shape = feat_shape[-1]
+            else:
+                feat_shape = np.prod(feat_shape)
+        if not isinstance(feat_shape, tuple):
+            feat_shape = (feat_shape,)
+        feat_shape = (np.array(bbox_sequences).shape[1],) + feat_shape
+    else:
+    """    
+    feat_shape = sequences.shape[1:]
+
+    return sequences, feat_shape
 
 
 def jitter_bbox(img_path, bbox, mode, ratio):

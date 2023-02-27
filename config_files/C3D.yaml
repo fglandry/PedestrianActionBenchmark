@@ -1,6 +1,6 @@
 model_opts:
   model: C3D
-  obs_input_type: [local_context]
+  obs_input_type: [pose]
   apply_class_weights: True
   generator: True
 exp_opts:

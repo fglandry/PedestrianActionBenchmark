@@ -1,6 +1,6 @@
 model_opts:
   model: HierarchicalRNN
-  obs_input_type: [box, speed]
+  obs_input_type: [box, speed, pose]
   apply_class_weights: True
   normalize_boxes: True
   generator: False
